@@ -2,10 +2,90 @@
 
 body {
   margin: 0;
-  background: #0f172a;
+  background: #020617;
   color: #e2e8f0;
 }
 
 #root {
   min-height: 100vh;
+}
+
+/* ── Bubble float (background ambient particles) ── */
+@keyframes bubble-float {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-110vh) scale(0.6);
+    opacity: 0;
+  }
+}
+
+/* ── Liquid wave surface in bioreactor SVG ── */
+@keyframes wave {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-12px); }
+}
+.animate-wave {
+  animation: wave 3s ease-in-out infinite;
+}
+
+/* ── Bubble rise inside flask (staggered) ── */
+@keyframes bubble-rise {
+  0% { transform: translateY(0) translateX(0); opacity: 0.7; }
+  50% { transform: translateY(-60px) translateX(4px); opacity: 0.5; }
+  100% { transform: translateY(-130px) translateX(-2px); opacity: 0; }
+}
+.animate-bubble-1 { animation: bubble-rise 3s ease-in infinite; }
+.animate-bubble-2 { animation: bubble-rise 4s ease-in 0.5s infinite; }
+.animate-bubble-3 { animation: bubble-rise 3.5s ease-in 1s infinite; }
+.animate-bubble-4 { animation: bubble-rise 5s ease-in 1.5s infinite; }
+.animate-bubble-5 { animation: bubble-rise 2.5s ease-in 0.8s infinite; }
+.animate-bubble-6 { animation: bubble-rise 3.2s ease-in 2s infinite; }
+
+/* ── Page entrance ── */
+@keyframes fade-in-up {
+  0% { opacity: 0; transform: translateY(24px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out forwards;
+}
+
+/* ── Staggered children entrance ── */
+.animate-stagger > * {
+  opacity: 0;
+  animation: fade-in-up 0.5s ease-out forwards;
+}
+.animate-stagger > *:nth-child(1) { animation-delay: 0.05s; }
+.animate-stagger > *:nth-child(2) { animation-delay: 0.1s; }
+.animate-stagger > *:nth-child(3) { animation-delay: 0.15s; }
+.animate-stagger > *:nth-child(4) { animation-delay: 0.2s; }
+.animate-stagger > *:nth-child(5) { animation-delay: 0.25s; }
+.animate-stagger > *:nth-child(6) { animation-delay: 0.3s; }
+
+/* ── Pulse glow (for homepage visual) ── */
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.15; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(1.05); }
+}
+.animate-glow-pulse {
+  animation: glow-pulse 4s ease-in-out infinite;
+}
+
+/* ── Liquid shimmer ── */
+@keyframes shimmer {
+  0% { opacity: 0.1; }
+  50% { opacity: 0.25; }
+  100% { opacity: 0.1; }
+}
+.animate-shimmer {
+  animation: shimmer 2.5s ease-in-out infinite;
 }

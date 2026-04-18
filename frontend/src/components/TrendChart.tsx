@@ -45,7 +45,7 @@ export default function TrendChart({ history }: TrendChartProps) {
   };
 
   return (
-    <div className="bg-slate-800/80 rounded-xl p-5 border border-slate-700/50 space-y-5">
+    <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-2xl p-5 border border-slate-700/30 space-y-5">
       {/* Health Score Chart */}
       <div>
         <div className="flex items-center gap-2 mb-2">
@@ -91,6 +91,17 @@ export default function TrendChart({ history }: TrendChartProps) {
             <span className="text-violet-400">&#9679; pH</span>
           </div>
         </div>
+        <div className="mb-3 flex flex-wrap gap-2 text-[11px]">
+          <span className="rounded-full border border-orange-400/25 bg-orange-400/10 px-2.5 py-1 text-orange-300">
+            Temp target: 20-28°C
+          </span>
+          <span className="rounded-full border border-sky-400/25 bg-sky-400/10 px-2.5 py-1 text-sky-300">
+            Humidity target: 50-80%
+          </span>
+          <span className="rounded-full border border-violet-400/25 bg-violet-400/10 px-2.5 py-1 text-violet-300">
+            pH target: 6.5-8.0
+          </span>
+        </div>
         <ResponsiveContainer width="100%" height={170}>
           <LineChart data={data} margin={{ left: 5, right: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
@@ -103,30 +114,54 @@ export default function TrendChart({ history }: TrendChartProps) {
 
             {/* Temperature target band: 20–28°C */}
             <ReferenceArea yAxisId="left" y1={20} y2={28} fill="#fb923c" fillOpacity={0.1} />
-            <ReferenceLine yAxisId="left" y={20} stroke="#fb923c" strokeDasharray="6 3" strokeOpacity={0.6}>
-              <label value="20°C min" position="insideTopLeft" fontSize={10} fill="#fb923c" fontWeight={500} />
-            </ReferenceLine>
-            <ReferenceLine yAxisId="left" y={28} stroke="#fb923c" strokeDasharray="6 3" strokeOpacity={0.6}>
-              <label value="28°C max" position="insideBottomLeft" fontSize={10} fill="#fb923c" fontWeight={500} />
-            </ReferenceLine>
+            <ReferenceLine
+              yAxisId="left"
+              y={20}
+              stroke="#fb923c"
+              strokeDasharray="6 3"
+              strokeOpacity={0.6}
+            />
+            <ReferenceLine
+              yAxisId="left"
+              y={28}
+              stroke="#fb923c"
+              strokeDasharray="6 3"
+              strokeOpacity={0.6}
+            />
 
             {/* Humidity target band: 50–80% */}
             <ReferenceArea yAxisId="left" y1={50} y2={80} fill="#38bdf8" fillOpacity={0.06} />
-            <ReferenceLine yAxisId="left" y={50} stroke="#38bdf8" strokeDasharray="6 3" strokeOpacity={0.5}>
-              <label value="50% min" position="insideTopLeft" fontSize={10} fill="#38bdf8" fontWeight={500} offset={15} />
-            </ReferenceLine>
-            <ReferenceLine yAxisId="left" y={80} stroke="#38bdf8" strokeDasharray="6 3" strokeOpacity={0.5}>
-              <label value="80% max" position="insideBottomLeft" fontSize={10} fill="#38bdf8" fontWeight={500} offset={15} />
-            </ReferenceLine>
+            <ReferenceLine
+              yAxisId="left"
+              y={50}
+              stroke="#38bdf8"
+              strokeDasharray="6 3"
+              strokeOpacity={0.5}
+            />
+            <ReferenceLine
+              yAxisId="left"
+              y={80}
+              stroke="#38bdf8"
+              strokeDasharray="6 3"
+              strokeOpacity={0.5}
+            />
 
             {/* pH target band: 6.5–8.0 */}
             <ReferenceArea yAxisId="right" y1={6.5} y2={8.0} fill="#a78bfa" fillOpacity={0.08} />
-            <ReferenceLine yAxisId="right" y={6.5} stroke="#a78bfa" strokeDasharray="6 3" strokeOpacity={0.6}>
-              <label value="pH 6.5" position="insideTopRight" fontSize={10} fill="#a78bfa" fontWeight={500} />
-            </ReferenceLine>
-            <ReferenceLine yAxisId="right" y={8.0} stroke="#a78bfa" strokeDasharray="6 3" strokeOpacity={0.6}>
-              <label value="pH 8.0" position="insideBottomRight" fontSize={10} fill="#a78bfa" fontWeight={500} />
-            </ReferenceLine>
+            <ReferenceLine
+              yAxisId="right"
+              y={6.5}
+              stroke="#a78bfa"
+              strokeDasharray="6 3"
+              strokeOpacity={0.6}
+            />
+            <ReferenceLine
+              yAxisId="right"
+              y={8.0}
+              stroke="#a78bfa"
+              strokeDasharray="6 3"
+              strokeOpacity={0.6}
+            />
 
             <Line
               yAxisId="left"

@@ -6,6 +6,7 @@ Run: uvicorn main:app --reload --port 8000
 """
 
 import asyncio
+import inspect
 import json
 import time
 from contextlib import asynccontextmanager
@@ -44,17 +45,41 @@ async def broadcast(data: dict):
         connected_clients.remove(ws)
 
 
+async def get_sensor_reading():
+    """Read a sensor sample from either the mock or real reader."""
+    if hasattr(sensor_reader, "read"):
+        if inspect.iscoroutinefunction(sensor_reader.read):
+            return await sensor_reader.read()
+        return await asyncio.to_thread(sensor_reader.read)
+
+    if hasattr(sensor_reader, "read_line"):
+        return await asyncio.to_thread(sensor_reader.read_line)
+
+    raise AttributeError("Sensor reader has no supported read method")
+
+
+async def get_image_features():
+    """Capture image features from either the mock or real processor."""
+    if inspect.iscoroutinefunction(image_processor.capture_and_analyze):
+        return await image_processor.capture_and_analyze()
+    return await asyncio.to_thread(image_processor.capture_and_analyze)
+
+
 async def sensor_loop():
     """Main loop: read sensors, process images, compute state, broadcast."""
     while True:
         try:
             # Read sensor data
-            reading = await sensor_reader.read()
+            reading = await get_sensor_reading()
+            if reading is None:
+                await asyncio.sleep(TICK_INTERVAL)
+                continue
             store.add_sensor_reading(reading)
 
             # Capture & analyze image
-            image_features = await image_processor.capture_and_analyze()
-            store.add_image_features(image_features)
+            image_features = await get_image_features()
+            if image_features is not None:
+                store.add_image_features(image_features)
 
             # Compute health score (rules-based)
             score, components = compute_health_score(reading, image_features)
@@ -72,6 +97,8 @@ async def sensor_loop():
                 score = round(0.6 * score + 0.4 * ml_score, 1)
 
             health_history.append(score)
+            if len(health_history) > 300:
+                del health_history[:-300]
 
             # Compute trend and anomaly risk
             trend = compute_trend(health_history)
