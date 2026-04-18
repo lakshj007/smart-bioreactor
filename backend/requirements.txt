@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+pyserial
+numpy
+pandas
+scikit-learn
+opencv-python
+python-multipart
