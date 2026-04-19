@@ -14,6 +14,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 from health_model import compute_anomaly_risk, compute_health_score, compute_trend
 from image_processor import ImageProcessor, MockImageProcessor
@@ -28,6 +29,9 @@ sensor_reader = MockSerialReader()
 ml_predictor = MLPredictor()
 connected_clients: list[WebSocket] = []
 health_history: list[float] = []
+
+# ── Client-side turbidity (from frontend camera) ─────────
+client_turbidity: dict | None = None  # latest reading from frontend camera
 
 # ── Camera setup: try real camera, fall back to mock ─────────
 def _init_image_processor():
@@ -95,6 +99,17 @@ async def sensor_loop():
             image_features = await get_image_features()
             if image_features is not None:
                 store.add_image_features(image_features)
+
+            # Overlay client-side turbidity if available
+            if client_turbidity is not None and image_features is not None:
+                image_features.turbidity = client_turbidity.get("turbidity", image_features.turbidity)
+                image_features.turbidity_components = {
+                    "sharpness": client_turbidity.get("sharpness", 0),
+                    "color": client_turbidity.get("colorScore", 0),
+                    "brightness": client_turbidity.get("brightnessScore", 0),
+                    "calibrated": client_turbidity.get("calibrated", False),
+                    "source": "client_camera",
+                }
 
             # Compute health score (rules-based)
             score, components = compute_health_score(reading, image_features)
@@ -303,3 +318,37 @@ async def websocket_endpoint(ws: WebSocket):
     finally:
         if ws in connected_clients:
             connected_clients.remove(ws)
+
+
+class ClientTurbidityPayload(BaseModel):
+    turbidity: float
+    sharpness: float = 0.0
+    colorScore: float = 0.0
+    brightnessScore: float = 0.0
+    avgBrightness: float = 0.0
+    saturationMean: float = 0.0
+    blueRedRatio: float = 0.0
+    calibrated: bool = False
+
+
+@app.post("/api/camera/turbidity")
+def receive_client_turbidity(payload: ClientTurbidityPayload):
+    """Receive turbidity data computed client-side from the device camera."""
+    global client_turbidity
+    client_turbidity = payload.model_dump()
+    client_turbidity["timestamp"] = time.time()
+    return {"status": "ok", "turbidity": payload.turbidity}
+
+
+class ClientCalibration(BaseModel):
+    brightness: float
+    sharpness: float
+    saturation: float
+    blueRedRatio: float
+
+
+@app.post("/api/camera/calibrate-client")
+def receive_client_calibration(payload: ClientCalibration):
+    """Receive calibration baseline computed client-side."""
+    print(f"[main] Client calibration received: {payload.model_dump()}")
+    return {"status": "calibrated", "baseline": payload.model_dump()}
