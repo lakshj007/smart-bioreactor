@@ -8,6 +8,7 @@ Run: uvicorn main:app --reload --port 8000
 import asyncio
 import inspect
 import json
+import os
 import time
 from contextlib import asynccontextmanager
 
@@ -21,16 +22,27 @@ from health_model import compute_anomaly_risk, compute_health_score, compute_tre
 from image_processor import ImageProcessor, MockImageProcessor
 from ml_predictor import MLPredictor
 from recommendation_engine import generate_recommendation
-from serial_reader import MockSerialReader
+from serial_reader import MockSerialReader, SerialReader
 from state_store import StateStore, SystemState, ImageFeatures
 
 # ── Global state ──────────────────────────────────────────────
 store = StateStore()
-sensor_reader = MockSerialReader()
+
+# Set SERIAL_PORT (e.g. COM3 on Windows, /dev/ttyACM0 on Linux) to use the real
+# Arduino. Leave unset to fall back to the mock reader for demo/dev.
+_serial_port = os.getenv("SERIAL_PORT")
+_serial_baud = int(os.getenv("SERIAL_BAUD", "9600"))
+if _serial_port:
+    _reader = SerialReader(port=_serial_port, baud=_serial_baud)
+    sensor_reader = _reader if _reader.connect() else MockSerialReader()
+else:
+    sensor_reader = MockSerialReader()
+
 ml_predictor = MLPredictor()
 assistant = BiosphereAssistant(store)
 connected_clients: list[WebSocket] = []
 health_history: list[float] = []
+stirring_on: bool = False
 
 # ── Client-side turbidity (from frontend camera) ─────────
 client_turbidity: dict | None = None  # latest reading from frontend camera
@@ -74,10 +86,15 @@ async def get_image_features():
 
 async def sensor_loop():
     """Main loop: read sensors, process images, compute state, broadcast."""
+    global stirring_on
     while True:
         try:
             # Read sensor data
             reading = await get_sensor_reading()
+            # Sync device-reported state (e.g. physical button toggles).
+            device_state = getattr(sensor_reader, "device_state", None)
+            if device_state and "stirring" in device_state:
+                stirring_on = bool(device_state["stirring"])
             if reading is None:
                 await asyncio.sleep(TICK_INTERVAL)
                 continue
@@ -151,6 +168,7 @@ async def sensor_loop():
             payload = store.get_state_payload()
             payload["components"] = components
             payload["history"] = store.get_history_payload()
+            payload["stirring"] = stirring_on
             if ml_result:
                 payload["ml"] = ml_result
             await broadcast(payload)
@@ -307,6 +325,27 @@ async def assistant_tts(req: TTSRequest):
     return Response(content=audio, media_type="audio/mpeg")
 
 
+class StirrerRequest(BaseModel):
+    on: bool
+
+
+@app.get("/api/stirrer")
+def stirrer_status():
+    return {"on": stirring_on}
+
+
+@app.post("/api/stirrer")
+def set_stirrer(req: StirrerRequest):
+    """Turn the Arduino stirrer on/off by sending STIR:ON or STIR:OFF over serial."""
+    global stirring_on
+    command = "STIR:ON" if req.on else "STIR:OFF"
+    sent = False
+    if hasattr(sensor_reader, "write_line"):
+        sent = sensor_reader.write_line(command)
+    stirring_on = req.on
+    return {"on": stirring_on, "sent": sent}
+
+
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
     """WebSocket endpoint for live state streaming."""
@@ -316,6 +355,7 @@ async def websocket_endpoint(ws: WebSocket):
         # Send current state immediately
         payload = store.get_state_payload()
         payload["history"] = store.get_history_payload()
+        payload["stirring"] = stirring_on
         await ws.send_text(json.dumps(payload))
         # Keep connection alive
         while True:
