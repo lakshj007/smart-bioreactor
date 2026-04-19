@@ -7,3 +7,4 @@ scikit-learn
 opencv-python
 python-multipart
 httpx
+python-dotenv

@@ -6,20 +6,22 @@ Context-aware bioreactor guidance using live sensor data.
 import os
 
 import httpx
+from dotenv import load_dotenv
 
 from state_store import StateStore
 
-CEREBRAS_API_KEY = os.environ.get(
-    "CEREBRAS_API_KEY",
-    "csk-h2we4cf48f5x954n4x6kkwwt8fx6c85eccfr6c4dvdpmtdm3",
-)
+# Load environment variables from .env file
+load_dotenv()
+
+CEREBRAS_API_KEY = os.environ.get("CEREBRAS_API_KEY")
+if not CEREBRAS_API_KEY:
+    raise RuntimeError("CEREBRAS_API_KEY not set. Add it to backend/.env")
 CEREBRAS_URL = "https://api.cerebras.ai/v1/chat/completions"
 CEREBRAS_MODEL = "llama3.1-8b"
 
-ELEVENLABS_API_KEY = os.environ.get(
-    "ELEVENLABS_API_KEY",
-    "ba77b52c3203becb0f17855a4efe4ccb10ee096c46f1aa382096067fcbf986be",
-)
+ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY")
+if not ELEVENLABS_API_KEY:
+    raise RuntimeError("ELEVENLABS_API_KEY not set. Add it to backend/.env")
 ELEVENLABS_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"  # Rachel
 ELEVENLABS_URL = (
     f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}"
