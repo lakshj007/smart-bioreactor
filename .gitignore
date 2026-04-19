@@ -1,2 +1,8 @@
 CalCOFI_Database_194903-202105_csv_16October2023/
 .DS_Store
+
+# Environment & secrets
+.env
+.env.*
+*.env
+!.env.example
