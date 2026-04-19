@@ -1,38 +1,66 @@
+import { AlertTriangle, AlertCircle, CheckCircle, Lightbulb } from "lucide-react";
+import type { JSX } from "react";
+
 interface RecommendationCardProps {
   recommendation: string;
   anomalyRisk: string;
 }
 
-export default function RecommendationCard({ recommendation, anomalyRisk }: RecommendationCardProps) {
-  const borderColor =
-    anomalyRisk === "high"
-      ? "border-red-500/40"
-      : anomalyRisk === "medium"
-        ? "border-yellow-500/40"
-        : "border-emerald-500/30";
+export default function RecommendationCard({
+  recommendation,
+  anomalyRisk,
+}: RecommendationCardProps) {
+  const styles: Record<string, { border: string; iconBg: string; color: string; icon: JSX.Element }> = {
+    high: {
+      border: "rgba(255, 107, 107, 0.3)",
+      iconBg: "var(--danger-dim)",
+      color: "var(--danger)",
+      icon: <AlertTriangle size={18} />,
+    },
+    medium: {
+      border: "rgba(255, 180, 84, 0.3)",
+      iconBg: "var(--warning-dim)",
+      color: "var(--warning)",
+      icon: <AlertCircle size={18} />,
+    },
+    low: {
+      border: "rgba(94, 231, 200, 0.25)",
+      iconBg: "var(--accent-dim)",
+      color: "var(--accent)",
+      icon: <CheckCircle size={18} />,
+    },
+  };
 
-  const iconBg =
-    anomalyRisk === "high"
-      ? "bg-red-500/15"
-      : anomalyRisk === "medium"
-        ? "bg-yellow-500/15"
-        : "bg-emerald-500/15";
+  const s = styles[anomalyRisk] || styles.low;
 
   return (
-    <div className={`bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-2xl p-5 border ${borderColor}`}>
-      <div className="flex items-start gap-3">
-        <div className={`w-10 h-10 rounded-xl ${iconBg} flex items-center justify-center shrink-0 mt-0.5`}>
-          {anomalyRisk === "high" ? (
-            <span className="text-red-400 text-lg font-bold">!</span>
-          ) : anomalyRisk === "medium" ? (
-            <span className="text-yellow-400 text-lg">~</span>
-          ) : (
-            <span className="text-emerald-400 text-lg">{"\u2713"}</span>
-          )}
+    <div
+      className="glass rounded-2xl p-5"
+      style={{ borderColor: s.border }}
+    >
+      <div className="flex items-start gap-4">
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
+          style={{ background: s.iconBg, color: s.color }}
+        >
+          {s.icon}
         </div>
         <div>
-          <h3 className="text-slate-300 text-sm font-semibold mb-1.5">Recommendation</h3>
-          <p className="text-slate-400 text-sm leading-relaxed">{recommendation}</p>
+          <div className="flex items-center gap-2 mb-2">
+            <Lightbulb size={12} style={{ color: "var(--text-muted)" }} />
+            <h3
+              className="text-[10px] font-semibold tracking-[0.25em] uppercase"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Recommendation
+            </h3>
+          </div>
+          <p
+            className="text-sm leading-relaxed"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            {recommendation}
+          </p>
         </div>
       </div>
     </div>
