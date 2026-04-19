@@ -26,7 +26,7 @@ export default function TrendChart({ history }: TrendChartProps) {
     health: h.healthScore,
     temp: h.temperature,
     ph: h.ph,
-    turbidity: h.turbidity,
+    turbidity: h.turbidity != null ? h.turbidity * 50 : null,
   }));
 
   const axisProps = {

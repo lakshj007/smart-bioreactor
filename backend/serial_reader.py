@@ -23,6 +23,8 @@ class SerialReader:
         self.port = port
         self.baud = baud
         self._serial: Optional[object] = None
+        # Device-reported state updated as STATE: lines are observed.
+        self.device_state: dict = {}
 
     def connect(self) -> bool:
         if serial is None:
@@ -40,21 +42,41 @@ class SerialReader:
         if self._serial is None:
             return None
         try:
-            line = self._serial.readline().decode("utf-8").strip()
+            line = self._serial.readline().decode("utf-8", errors="ignore").strip()
             if not line:
                 return None
-            parts = line.split(",")
-            # Expected: timestamp,temp,humidity[,ph]
-            if len(parts) >= 3:
-                return SensorReading(
-                    timestamp=float(parts[0]),
-                    temperature=float(parts[1]),
-                    humidity=float(parts[2]),
-                    ph=float(parts[3]) if len(parts) > 3 else None,
-                )
+            # Arduino Uno Q sketch emits "DATA:<tempC>" for machine-readable rows.
+            if line.startswith("DATA:"):
+                temp = float(line[5:].strip())
+                return SensorReading(timestamp=time.time(), temperature=temp)
+            # STATE:STIR:ON / STATE:STIR:OFF — device-driven state changes (physical button).
+            if line.startswith("STATE:STIR:"):
+                self.device_state["stirring"] = line.endswith(":ON")
+                return None
+            # Legacy CSV: timestamp,temp,humidity[,ph][,light]
+            if "," in line:
+                parts = line.split(",")
+                if len(parts) >= 3:
+                    return SensorReading(
+                        timestamp=float(parts[0]),
+                        temperature=float(parts[1]),
+                        humidity=float(parts[2]),
+                        ph=float(parts[3]) if len(parts) > 3 else None,
+                        light=float(parts[4]) if len(parts) > 4 else None,
+                    )
         except Exception as e:
             print(f"Serial read error: {e}")
         return None
+
+    def write_line(self, command: str) -> bool:
+        if self._serial is None:
+            return False
+        try:
+            self._serial.write((command.rstrip() + "\n").encode("utf-8"))
+            return True
+        except Exception as e:
+            print(f"Serial write error: {e}")
+            return False
 
     def close(self):
         if self._serial:

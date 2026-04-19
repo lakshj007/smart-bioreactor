@@ -9,6 +9,7 @@ export interface ReactorState {
   anomalyRisk: "low" | "medium" | "high";
   recommendation: string;
   timestamp: number;
+  stirring?: boolean;
   components?: Record<string, number>;
   history?: HistoryPoint[];
 }

@@ -8,6 +8,7 @@ import RecommendationCard from "./RecommendationCard";
 import CameraPanel from "./CameraPanel";
 import AssistantSidebar from "./AssistantSidebar";
 import BubbleBackground from "./BubbleBackground";
+import StirrerControl from "./StirrerControl";
 
 interface DashboardProps {
   state: ReactorState | null;
@@ -81,7 +82,7 @@ export default function Dashboard({ state, connected, onBack }: DashboardProps) 
               />
               <SensorCard
                 label="Turbidity"
-                value={state?.turbidity ?? null}
+                value={state?.turbidity != null ? state.turbidity * 50 : null}
                 unit="NTU"
                 iconKey="turbidity"
                 min={0}
@@ -110,24 +111,7 @@ export default function Dashboard({ state, connected, onBack }: DashboardProps) 
               max={600}
               precision={0}
             />
-            <div
-              className="glass rounded-2xl p-5 flex flex-col justify-between"
-              style={{ minHeight: 132 }}
-            >
-              <span
-                className="text-[11px] tracking-[0.18em] uppercase font-medium"
-                style={{ color: "var(--text-muted)" }}
-              >
-                More sensors
-              </span>
-              <p
-                className="text-xs leading-relaxed"
-                style={{ color: "var(--text-secondary)" }}
-              >
-                Dissolved O₂, CO₂, and nutrient sensors will appear here as
-                they come online.
-              </p>
-            </div>
+            <StirrerControl on={state?.stirring ?? false} />
             <div
               className="glass rounded-2xl p-5 flex flex-col justify-between"
               style={{ minHeight: 132 }}
