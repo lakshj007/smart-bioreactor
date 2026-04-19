@@ -22,7 +22,7 @@ from image_processor import ImageProcessor, MockImageProcessor
 from ml_predictor import MLPredictor
 from recommendation_engine import generate_recommendation
 from serial_reader import MockSerialReader
-from state_store import StateStore, SystemState
+from state_store import StateStore, SystemState, ImageFeatures
 
 # ── Global state ──────────────────────────────────────────────
 store = StateStore()
@@ -32,20 +32,11 @@ assistant = BiosphereAssistant(store)
 connected_clients: list[WebSocket] = []
 health_history: list[float] = []
 
-# ── Camera setup: try real camera, fall back to mock ─────────
-def _init_image_processor():
-    """Attempt to connect a real camera; fall back to MockImageProcessor."""
-    try:
-        real = ImageProcessor(camera_index=0)
-        if real.connect():
-            print("[main] Real camera connected — using ImageProcessor")
-            return real
-    except Exception as e:
-        print(f"[main] Real camera failed: {e}")
-    print("[main] Using MockImageProcessor (no camera detected)")
-    return MockImageProcessor()
+# ── Client-side turbidity (from frontend camera) ─────────
+client_turbidity: dict | None = None  # latest reading from frontend camera
 
-image_processor = _init_image_processor()
+# ── Camera setup: try real camera, fall back to mock ─────────
+client_image_features = None
 
 TICK_INTERVAL = 2.0  # seconds between sensor reads
 
@@ -78,9 +69,7 @@ async def get_sensor_reading():
 
 async def get_image_features():
     """Capture image features from either the mock or real processor."""
-    if inspect.iscoroutinefunction(image_processor.capture_and_analyze):
-        return await image_processor.capture_and_analyze()
-    return await asyncio.to_thread(image_processor.capture_and_analyze)
+    return client_image_features
 
 
 async def sensor_loop():
@@ -98,6 +87,17 @@ async def sensor_loop():
             image_features = await get_image_features()
             if image_features is not None:
                 store.add_image_features(image_features)
+
+            # Overlay client-side turbidity if available
+            if client_turbidity is not None and image_features is not None:
+                image_features.turbidity = client_turbidity.get("turbidity", image_features.turbidity)
+                image_features.turbidity_components = {
+                    "sharpness": client_turbidity.get("sharpness", 0),
+                    "color": client_turbidity.get("colorScore", 0),
+                    "brightness": client_turbidity.get("brightnessScore", 0),
+                    "calibrated": client_turbidity.get("calibrated", False),
+                    "source": "client_camera",
+                }
 
             # Compute health score (rules-based)
             score, components = compute_health_score(reading, image_features)
@@ -217,76 +217,61 @@ def predict(temperature: float = 24.0, salinity: float = 33.5, dissolved_oxygen:
     return result
 
 
-@app.post("/api/camera/calibrate")
-def calibrate_camera():
-    """Calibrate turbidity baseline with current (clear-water) frame."""
-    if not isinstance(image_processor, ImageProcessor):
-        return {"error": "No real camera connected — calibration requires a live camera."}
-    result = image_processor.calibrate()
-    if result is None:
-        return {"error": "Failed to capture frame for calibration."}
-    return {"status": "calibrated", "baseline": result}
+class TurbidityData(BaseModel):
+    turbidity: float
+    sharpness: float
+    colorScore: float
+    brightnessScore: float
+    avgBrightness: float
+    saturationMean: float
+    blueRedRatio: float
+    calibrated: bool
 
+@app.post("/api/camera/turbidity")
+def update_turbidity(data: TurbidityData):
+    """Receive client-calculated turbidity features."""
+    global client_image_features
+    # Map frontend scores to backend ImageFeatures
+    client_image_features = ImageFeatures(
+        timestamp=time.time(),
+        avg_brightness=data.avgBrightness,
+        turbidity=data.turbidity,
+        laplacian_variance=data.sharpness,
+        saturation_mean=data.saturationMean,
+        blue_red_ratio=data.blueRedRatio,
+        turbidity_components={
+            "sharpness": data.sharpness,
+            "color": data.colorScore,
+            "brightness": data.brightnessScore,
+            "calibrated": data.calibrated
+        }
+    )
+    return {"status": "ok"}
 
-@app.post("/api/camera/roi")
-def set_camera_roi(x: int, y: int, w: int, h: int):
-    """Set the Region of Interest for turbidity analysis."""
-    if not isinstance(image_processor, ImageProcessor):
-        return {"error": "No real camera connected."}
-    image_processor.set_roi(x, y, w, h)
-    return {"status": "ok", "roi": {"x": x, "y": y, "w": w, "h": h}}
+class CalibrationData(BaseModel):
+    brightness: float
+    sharpness: float
+    saturation: float
+    blueRedRatio: float
 
+@app.post("/api/camera/calibrate-client")
+def calibrate_client(data: CalibrationData):
+    """Calibrate turbidity baseline with client features."""
+    return {"status": "ok", "baseline": data.model_dump() if hasattr(data, "model_dump") else data.dict()}
 
 @app.get("/api/camera/snapshot")
 def get_snapshot():
     """Get a single analyzed frame (useful for debugging)."""
-    if not isinstance(image_processor, ImageProcessor):
-        return {"error": "No real camera connected."}
-    features = image_processor.capture_and_analyze()
-    if features is None:
-        return {"error": "Failed to capture frame."}
+    if not client_image_features:
+        return {"error": "No camera data received from frontend."}
     return {
-        "turbidity": features.turbidity,
-        "turbidity_components": features.turbidity_components,
-        "avg_brightness": features.avg_brightness,
-        "green_ratio": features.green_ratio,
-        "laplacian_variance": features.laplacian_variance,
-        "saturation_mean": features.saturation_mean,
-        "blue_red_ratio": features.blue_red_ratio,
+        "turbidity": client_image_features.turbidity,
+        "turbidity_components": client_image_features.turbidity_components,
+        "avg_brightness": client_image_features.avg_brightness,
+        "laplacian_variance": client_image_features.laplacian_variance,
+        "saturation_mean": client_image_features.saturation_mean,
+        "blue_red_ratio": client_image_features.blue_red_ratio,
     }
-
-
-def _generate_mjpeg_frames():
-    """Generator that yields JPEG frames for MJPEG streaming."""
-    import cv2 as _cv2
-    proc = image_processor
-    if not isinstance(proc, ImageProcessor) or proc._cap is None:
-        return
-    while True:
-        ret, frame = proc._cap.read()
-        if not ret:
-            break
-        # Draw ROI rectangle if set
-        if proc._roi is not None:
-            x, y, w, h = proc._roi
-            _cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 200), 2)
-        _, jpeg = _cv2.imencode(".jpg", frame, [_cv2.IMWRITE_JPEG_QUALITY, 70])
-        yield (
-            b"--frame\r\n"
-            b"Content-Type: image/jpeg\r\n\r\n" + jpeg.tobytes() + b"\r\n"
-        )
-        time.sleep(0.066)  # ~15 fps
-
-
-@app.get("/api/camera/stream")
-def video_feed():
-    """MJPEG video stream from the webcam."""
-    if not isinstance(image_processor, ImageProcessor):
-        return {"error": "No real camera connected."}
-    return StreamingResponse(
-        _generate_mjpeg_frames(),
-        media_type="multipart/x-mixed-replace; boundary=frame",
-    )
 
 # ── AI Assistant endpoints ────────────────────────────────────
 
@@ -340,3 +325,37 @@ async def websocket_endpoint(ws: WebSocket):
     finally:
         if ws in connected_clients:
             connected_clients.remove(ws)
+
+
+class ClientTurbidityPayload(BaseModel):
+    turbidity: float
+    sharpness: float = 0.0
+    colorScore: float = 0.0
+    brightnessScore: float = 0.0
+    avgBrightness: float = 0.0
+    saturationMean: float = 0.0
+    blueRedRatio: float = 0.0
+    calibrated: bool = False
+
+
+@app.post("/api/camera/turbidity")
+def receive_client_turbidity(payload: ClientTurbidityPayload):
+    """Receive turbidity data computed client-side from the device camera."""
+    global client_turbidity
+    client_turbidity = payload.model_dump()
+    client_turbidity["timestamp"] = time.time()
+    return {"status": "ok", "turbidity": payload.turbidity}
+
+
+class ClientCalibration(BaseModel):
+    brightness: float
+    sharpness: float
+    saturation: float
+    blueRedRatio: float
+
+
+@app.post("/api/camera/calibrate-client")
+def receive_client_calibration(payload: ClientCalibration):
+    """Receive calibration baseline computed client-side."""
+    print(f"[main] Client calibration received: {payload.model_dump()}")
+    return {"status": "calibrated", "baseline": payload.model_dump()}

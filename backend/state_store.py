@@ -70,11 +70,15 @@ class StateStore:
 
     def get_state_payload(self) -> dict:
         s = self.current_state
+        turbidity_val = None
+        if s.image_features is not None:
+            turbidity_val = s.image_features.turbidity
         return {
             "temperature": s.temperature,
             "humidity": s.humidity,
             "ph": s.ph,
             "light": s.light,
+            "turbidity": turbidity_val,
             "healthScore": s.health_score,
             "trend": s.trend,
             "anomalyRisk": s.anomaly_risk,
@@ -89,6 +93,7 @@ class StateStore:
                 "temperature": s.temperature,
                 "humidity": s.humidity,
                 "ph": s.ph,
+                "turbidity": s.image_features.turbidity if s.image_features else None,
                 "healthScore": s.health_score,
                 "anomalyRisk": s.anomaly_risk,
                 "timestamp": s.timestamp,
