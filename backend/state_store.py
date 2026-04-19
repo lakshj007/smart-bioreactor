@@ -22,8 +22,13 @@ class ImageFeatures:
     avg_green: float = 0.0
     avg_red: float = 0.0
     avg_blue: float = 0.0
-    turbidity: float = 0.0  # edge density proxy
+    turbidity: float = 0.0  # multi-method ensemble (0=clear, 1=opaque)
     green_ratio: float = 0.0
+    # Sub-metrics from multi-method turbidity estimation
+    laplacian_variance: float = 0.0   # sharpness / contrast proxy
+    saturation_mean: float = 0.0      # HSV saturation average
+    blue_red_ratio: float = 0.0       # B/R color ratio
+    turbidity_components: Optional[dict] = None  # detailed breakdown
 
 
 @dataclass
