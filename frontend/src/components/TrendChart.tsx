@@ -25,54 +25,68 @@ export default function TrendChart({ history }: TrendChartProps) {
     }),
     health: h.healthScore,
     temp: h.temperature,
-    humidity: h.humidity,
     ph: h.ph,
+    turbidity: h.turbidity,
   }));
 
   const axisProps = {
-    stroke: "#94a3b8",
-    fontSize: 12,
+    stroke: "#6E6E73",
+    fontSize: 11,
     tickLine: false,
     axisLine: false,
+    fontFamily: "Inter",
   } as const;
 
   const tooltipStyle = {
-    background: "#1e293b",
-    border: "1px solid #475569",
-    borderRadius: 8,
+    background: "rgba(17, 17, 20, 0.95)",
+    border: "1px solid rgba(255,255,255,0.08)",
+    borderRadius: 10,
     fontSize: 12,
-    color: "#e2e8f0",
+    color: "#F5F5F7",
+    fontFamily: "Inter",
+    backdropFilter: "blur(12px)",
   };
 
+  const healthColor = "#5EE7C8";
+  const tempColor = "#FFB454";
+  const phColor = "#A193F0";
+  const turbidityColor = "#4FB6FF";
+
   return (
-    <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-2xl p-5 border border-slate-700/30 space-y-5">
+    <div className="glass rounded-2xl p-6 space-y-7">
       {/* Health Score Chart */}
       <div>
-        <div className="flex items-center gap-2 mb-2">
-          <h3 className="text-slate-300 text-sm font-semibold">Health Score</h3>
-          <span className="text-[10px] text-slate-400 border border-slate-600 rounded px-1.5 py-0.5">
-            target: 70–100
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-[10px] font-semibold tracking-[0.25em] uppercase" style={{ color: "var(--text-muted)" }}>
+            Health Score
+          </h3>
+          <span
+            className="text-[10px] rounded-full px-2.5 py-1 font-medium"
+            style={{
+              color: healthColor,
+              border: `1px solid ${healthColor}30`,
+              background: `${healthColor}10`,
+            }}
+          >
+            target 70–100
           </span>
         </div>
         <ResponsiveContainer width="100%" height={150}>
           <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+            <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.04)" />
             <XAxis dataKey="time" {...axisProps} interval="preserveStartEnd" />
             <YAxis {...axisProps} domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} />
             <Tooltip contentStyle={tooltipStyle} />
-            {/* Healthy zone */}
-            <ReferenceArea y1={70} y2={100} fill="#4ade80" fillOpacity={0.1} />
-            {/* Warning zone */}
-            <ReferenceArea y1={50} y2={70} fill="#facc15" fillOpacity={0.07} />
-            {/* Critical zone */}
-            <ReferenceArea y1={0} y2={50} fill="#f87171" fillOpacity={0.07} />
-            <ReferenceLine y={70} stroke="#4ade80" strokeDasharray="6 3" strokeOpacity={0.7} />
-            <ReferenceLine y={50} stroke="#facc15" strokeDasharray="6 3" strokeOpacity={0.7} />
+            <ReferenceArea y1={70} y2={100} fill={healthColor} fillOpacity={0.06} />
+            <ReferenceArea y1={50} y2={70} fill="#FFB454" fillOpacity={0.04} />
+            <ReferenceArea y1={0} y2={50} fill="#FF6B6B" fillOpacity={0.04} />
+            <ReferenceLine y={70} stroke={healthColor} strokeDasharray="6 3" strokeOpacity={0.4} />
+            <ReferenceLine y={50} stroke="#FFB454" strokeDasharray="6 3" strokeOpacity={0.4} />
             <Line
               type="monotone"
               dataKey="health"
               name="Health Score"
-              stroke="#4ade80"
+              stroke={healthColor}
               strokeWidth={2}
               dot={false}
               isAnimationActive={false}
@@ -83,92 +97,34 @@ export default function TrendChart({ history }: TrendChartProps) {
 
       {/* Sensor Charts */}
       <div>
-        <div className="flex items-center gap-3 mb-2">
-          <h3 className="text-slate-300 text-sm font-semibold">Sensors</h3>
-          <div className="flex gap-3 text-xs">
-            <span className="text-orange-400">&#9679; Temp (°C)</span>
-            <span className="text-sky-400">&#9679; Humidity (%)</span>
-            <span className="text-violet-400">&#9679; pH</span>
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <h3 className="text-[10px] font-semibold tracking-[0.25em] uppercase" style={{ color: "var(--text-muted)" }}>
+            Sensors
+          </h3>
+          <div className="flex flex-wrap gap-3 text-[11px]" style={{ color: "var(--text-secondary)" }}>
+            <Legend color={tempColor} label="Temp" />
+            <Legend color={phColor} label="pH" />
+            <Legend color={turbidityColor} label="Turbidity" />
           </div>
         </div>
-        <div className="mb-3 flex flex-wrap gap-2 text-[11px]">
-          <span className="rounded-full border border-orange-400/25 bg-orange-400/10 px-2.5 py-1 text-orange-300">
-            Temp target: 20-28°C
-          </span>
-          <span className="rounded-full border border-sky-400/25 bg-sky-400/10 px-2.5 py-1 text-sky-300">
-            Humidity target: 50-80%
-          </span>
-          <span className="rounded-full border border-violet-400/25 bg-violet-400/10 px-2.5 py-1 text-violet-300">
-            pH target: 6.5-8.0
-          </span>
-        </div>
-        <ResponsiveContainer width="100%" height={170}>
+
+        <ResponsiveContainer width="100%" height={180}>
           <LineChart data={data} margin={{ left: 5, right: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+            <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.04)" />
             <XAxis dataKey="time" {...axisProps} interval="preserveStartEnd" />
-            {/* Left axis: temp & humidity */}
-            <YAxis yAxisId="left" {...axisProps} domain={[0, 100]} ticks={[0, 20, 40, 60, 80, 100]} />
-            {/* Right axis: pH */}
-            <YAxis yAxisId="right" orientation="right" {...axisProps} domain={[4, 10]} ticks={[4, 5, 6, 7, 8, 9, 10]} />
+            <YAxis yAxisId="left" {...axisProps} domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} />
+            <YAxis yAxisId="right" orientation="right" {...axisProps} domain={[4, 10]} ticks={[4, 6, 8, 10]} />
             <Tooltip contentStyle={tooltipStyle} />
 
-            {/* Temperature target band: 20–28°C */}
-            <ReferenceArea yAxisId="left" y1={20} y2={28} fill="#fb923c" fillOpacity={0.1} />
-            <ReferenceLine
-              yAxisId="left"
-              y={20}
-              stroke="#fb923c"
-              strokeDasharray="6 3"
-              strokeOpacity={0.6}
-            />
-            <ReferenceLine
-              yAxisId="left"
-              y={28}
-              stroke="#fb923c"
-              strokeDasharray="6 3"
-              strokeOpacity={0.6}
-            />
-
-            {/* Humidity target band: 50–80% */}
-            <ReferenceArea yAxisId="left" y1={50} y2={80} fill="#38bdf8" fillOpacity={0.06} />
-            <ReferenceLine
-              yAxisId="left"
-              y={50}
-              stroke="#38bdf8"
-              strokeDasharray="6 3"
-              strokeOpacity={0.5}
-            />
-            <ReferenceLine
-              yAxisId="left"
-              y={80}
-              stroke="#38bdf8"
-              strokeDasharray="6 3"
-              strokeOpacity={0.5}
-            />
-
-            {/* pH target band: 6.5–8.0 */}
-            <ReferenceArea yAxisId="right" y1={6.5} y2={8.0} fill="#a78bfa" fillOpacity={0.08} />
-            <ReferenceLine
-              yAxisId="right"
-              y={6.5}
-              stroke="#a78bfa"
-              strokeDasharray="6 3"
-              strokeOpacity={0.6}
-            />
-            <ReferenceLine
-              yAxisId="right"
-              y={8.0}
-              stroke="#a78bfa"
-              strokeDasharray="6 3"
-              strokeOpacity={0.6}
-            />
+            <ReferenceArea yAxisId="left" y1={20} y2={28} fill={tempColor} fillOpacity={0.06} />
+            <ReferenceArea yAxisId="right" y1={6.5} y2={8.0} fill={phColor} fillOpacity={0.05} />
 
             <Line
               yAxisId="left"
               type="monotone"
               dataKey="temp"
-              name="Temperature (°C)"
-              stroke="#fb923c"
+              name="Water Temp (°C)"
+              stroke={tempColor}
               strokeWidth={1.5}
               dot={false}
               isAnimationActive={false}
@@ -176,9 +132,9 @@ export default function TrendChart({ history }: TrendChartProps) {
             <Line
               yAxisId="left"
               type="monotone"
-              dataKey="humidity"
-              name="Humidity (%)"
-              stroke="#38bdf8"
+              dataKey="turbidity"
+              name="Turbidity (NTU)"
+              stroke={turbidityColor}
               strokeWidth={1.5}
               dot={false}
               isAnimationActive={false}
@@ -188,7 +144,7 @@ export default function TrendChart({ history }: TrendChartProps) {
               type="monotone"
               dataKey="ph"
               name="pH"
-              stroke="#a78bfa"
+              stroke={phColor}
               strokeWidth={1.5}
               dot={false}
               isAnimationActive={false}
@@ -197,5 +153,17 @@ export default function TrendChart({ history }: TrendChartProps) {
         </ResponsiveContainer>
       </div>
     </div>
+  );
+}
+
+function Legend({ color, label }: { color: string; label: string }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <span
+        className="w-2 h-2 rounded-full"
+        style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}` }}
+      />
+      {label}
+    </span>
   );
 }

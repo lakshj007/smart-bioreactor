@@ -1,12 +1,30 @@
+import { Camera } from "lucide-react";
+
 export default function CameraPanel() {
   return (
-    <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-2xl p-5 border border-slate-700/30">
-      <h3 className="text-slate-400 text-sm font-semibold mb-3">Camera Feed</h3>
-      <div className="bg-slate-950/60 rounded-xl aspect-video flex items-center justify-center border border-slate-700/20">
-        <div className="text-center text-slate-600">
-          <div className="text-3xl mb-2">{"\uD83D\uDCF7"}</div>
-          <p className="text-sm">Camera feed will appear here</p>
-          <p className="text-xs mt-1 text-slate-700">Connect a camera to enable visual monitoring</p>
+    <div className="glass rounded-2xl p-5">
+      <h3
+        className="text-[10px] font-semibold mb-4 tracking-[0.25em] uppercase"
+        style={{ color: "var(--text-muted)" }}
+      >
+        Camera Feed
+      </h3>
+      <div
+        className="rounded-xl aspect-video flex items-center justify-center relative overflow-hidden"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, rgba(94, 231, 200, 0.06), rgba(0,0,0,0.6))",
+          border: "1px solid rgba(255,255,255,0.05)",
+        }}
+      >
+        <div className="text-center flex flex-col items-center gap-3 px-4">
+          <Camera size={26} style={{ color: "var(--accent)", opacity: 0.7 }} />
+          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+            Camera feed will appear here
+          </p>
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+            Connect a camera to enable visual monitoring
+          </p>
         </div>
       </div>
     </div>

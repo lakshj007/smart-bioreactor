@@ -53,7 +53,7 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200">
+    <div style={{ background: "var(--bg)", color: "var(--text-primary)" }}>
       {page === "home" ? (
         <HomePage
           connected={connected}
