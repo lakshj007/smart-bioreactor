@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import {
   MessageCircle,
   X,
@@ -25,7 +25,7 @@ export default function AssistantSidebar() {
   const [ttsPlaying, setTtsPlaying] = useState(false);
   const [insightLoading, setInsightLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -35,6 +35,13 @@ export default function AssistantSidebar() {
   useEffect(() => {
     if (open) inputRef.current?.focus();
   }, [open]);
+
+  useLayoutEffect(() => {
+    const el = inputRef.current;
+    if (!el || !open) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+  }, [input, open]);
 
   async function playTTS(text: string) {
     if (!ttsEnabled) return;
@@ -150,7 +157,7 @@ export default function AssistantSidebar() {
     }
   }
 
-  function handleKeyDown(e: React.KeyboardEvent) {
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
@@ -478,30 +485,33 @@ export default function AssistantSidebar() {
           style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
         >
           <div
-            className="flex items-center gap-2 rounded-xl px-3 py-2"
+            className="flex items-end gap-2 rounded-xl px-3 py-2"
             style={{
               background: "rgba(255,255,255,0.03)",
               border: "1px solid rgba(255,255,255,0.08)",
             }}
           >
-            <input
+            <textarea
               ref={inputRef}
-              type="text"
+              rows={1}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Ask about your reactor..."
               disabled={loading}
-              className="flex-1 bg-transparent outline-none text-sm"
+              className="flex-1 bg-transparent outline-none text-sm resize-none block"
               style={{
                 color: "var(--text-primary)",
                 caretColor: "var(--accent)",
+                maxHeight: "160px",
+                overflowY: "auto",
+                lineHeight: "1.4",
               }}
             />
             <button
               onClick={sendMessage}
               disabled={!input.trim() || loading}
-              className="w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer"
+              className="w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer shrink-0"
               style={{
                 background:
                   input.trim() && !loading
