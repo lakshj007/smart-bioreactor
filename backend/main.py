@@ -13,8 +13,10 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
+from pydantic import BaseModel
 
+from assistant import BiosphereAssistant
 from health_model import compute_anomaly_risk, compute_health_score, compute_trend
 from image_processor import ImageProcessor, MockImageProcessor
 from ml_predictor import MLPredictor
@@ -26,6 +28,7 @@ from state_store import StateStore, SystemState
 store = StateStore()
 sensor_reader = MockSerialReader()
 ml_predictor = MLPredictor()
+assistant = BiosphereAssistant(store)
 connected_clients: list[WebSocket] = []
 health_history: list[float] = []
 
@@ -284,6 +287,40 @@ def video_feed():
         _generate_mjpeg_frames(),
         media_type="multipart/x-mixed-replace; boundary=frame",
     )
+
+# ── AI Assistant endpoints ────────────────────────────────────
+
+class ChatRequest(BaseModel):
+    message: str
+    history: list[dict] = []
+
+
+class TTSRequest(BaseModel):
+    text: str
+
+
+@app.post("/api/assistant/chat")
+async def assistant_chat(req: ChatRequest):
+    """Chat with the BioSphere AI assistant."""
+    response = await assistant.chat(req.message, req.history)
+    return {"response": response}
+
+
+@app.get("/api/assistant/insight")
+async def assistant_insight():
+    """Get an auto-generated status insight."""
+    response = await assistant.quick_insight()
+    return {"response": response}
+
+
+@app.post("/api/assistant/tts")
+async def assistant_tts(req: TTSRequest):
+    """Convert assistant text to speech via ElevenLabs."""
+    audio = await assistant.text_to_speech(req.text)
+    if audio is None:
+        return {"error": "TTS service unavailable"}
+    return Response(content=audio, media_type="audio/mpeg")
+
 
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):

@@ -6,6 +6,7 @@ import SensorCard from "./SensorCard";
 import TrendChart from "./TrendChart";
 import RecommendationCard from "./RecommendationCard";
 import CameraPanel from "./CameraPanel";
+import AssistantSidebar from "./AssistantSidebar";
 import BubbleBackground from "./BubbleBackground";
 
 interface DashboardProps {
@@ -187,6 +188,8 @@ export default function Dashboard({ state, connected, onBack }: DashboardProps) 
           </p>
         </footer>
       </div>
+
+      <AssistantSidebar />
     </div>
   );
 }

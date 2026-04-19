@@ -20,7 +20,7 @@ from sklearn.metrics import classification_report, mean_absolute_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
-DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "calcofi_bottle.csv")
+DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "CalCOFI_Database_194903-202105_csv_16October2023", "194903-202105_Bottle.csv")
 MODELS_DIR = os.path.join(os.path.dirname(__file__), "models")
 
 # Features we train on — the full sensor suite

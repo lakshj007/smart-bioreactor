@@ -100,6 +100,12 @@ html, body {
 }
 .animate-fade-in { animation: fade-in 1.2s ease-out forwards; }
 
+@keyframes slide-in-right {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(0); }
+}
+.animate-slide-in-right { animation: slide-in-right 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
 .animate-delay-100 { animation-delay: 0.1s; opacity: 0; }
 .animate-delay-200 { animation-delay: 0.2s; opacity: 0; }
 .animate-delay-300 { animation-delay: 0.3s; opacity: 0; }
